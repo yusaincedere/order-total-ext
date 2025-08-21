@@ -6,16 +6,22 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // load saved selector for this domain
+  // load saved selector for this domain (if chrome APIs exist)
   useEffect(() => {
     (async () => {
       try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        const host = new URL(tab.url || "").host;
-        const key = `selector:${host}`;
-        const data = await chrome.storage.sync.get(key);
-        if (data[key]) setSelector(data[key]);
-      } catch {}
+        if (typeof chrome !== "undefined" && chrome.tabs && chrome.storage) {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          if (tab?.url) {
+            const host = new URL(tab.url).host;
+            const key = `selector:${host}`;
+            const data = await chrome.storage.sync.get(key);
+            if (data[key]) setSelector(data[key]);
+          }
+        }
+      } catch (e) {
+        console.warn("Could not load selector:", e);
+      }
     })();
   }, []);
 
@@ -25,7 +31,13 @@ export default function App() {
     setResult(null);
 
     try {
+      if (!chrome?.tabs || !chrome?.scripting || !chrome?.storage) {
+        throw new Error("Chrome extension APIs not available. Try in extension build, not dev server.");
+      }
+
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id || !tab?.url) throw new Error("No active tab found.");
+
       const host = new URL(tab.url).host;
       await chrome.storage.sync.set({ [`selector:${host}`]: selector });
 

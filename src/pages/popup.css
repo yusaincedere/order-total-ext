@@ -132,3 +132,21 @@ kbd {
   padding: 1px 6px; border-radius: 6px;
 }
 
+.infobox {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(59,130,246,.25);
+  background: rgba(59,130,246,.08);
+  color: var(--text);
+  border-radius: 10px;
+  line-height: 1.35;
+}
+.infobox strong { font-weight: 800; }
+
+.icononly {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  justify-content: center;
+}
+.icononly .icon { width: 20px; height: 20px; }

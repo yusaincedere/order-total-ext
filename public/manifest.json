@@ -1,0 +1,9 @@
+{
+  "manifest_version": 3,
+  "name": "Order Total Calculator",
+  "version": "1.0.0",
+  "description": "Sums all order prices on the current page.",
+  "action": { "default_popup": "index.html" },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["<all_urls>"]
+}

@@ -3,7 +3,8 @@
   "name": "Order Total Calculator",
   "version": "1.0.0",
   "description": "Sums all order prices on the current page.",
-  "action": { "default_popup": "index.html" },
+  "action": { "default_popup": "pages/popup.html" },
   "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["<all_urls>"]
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background/service-worker.js" }
 }

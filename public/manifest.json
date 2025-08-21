@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Order Total Calculator",
+  "name": "Expense Lens",
   "version": "1.0.0",
-  "description": "Sums all order prices on the current page.",
+  "description": "Quickly sum up your order totals from any shopping site.",
   "action": { "default_popup": "pages/popup.html" },
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["<all_urls>"],

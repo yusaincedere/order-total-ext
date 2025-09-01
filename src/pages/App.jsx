@@ -1,66 +1,61 @@
 import { useEffect, useState } from "react";
+import calcUrl from "../assets/calc.svg";
 
-function CalcIcon({ className }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-    >
-      <rect
-        x="3"
-        y="3"
-        width="18"
-        height="18"
-        rx="4"
-        stroke="white"
-        opacity=".9"
-      />
-      <rect
-        x="7"
-        y="7"
-        width="10"
-        height="4"
-        rx="1.5"
-        fill="white"
-        opacity=".9"
-      />
-      <path
-        d="M7 14h4M7 17h4M14.5 14v3M13 15.5h3"
-        stroke="white"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
+const THEMES = ["theme-ocean", "theme-graphite", "theme-mint"];
 
 export default function App() {
   const [selector, setSelector] = useState(".item-price");
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [theme, setTheme] = useState(THEMES[0]);
+  const [matchCount, setMatchCount] = useState(null);
 
-  // Load saved selector per domain, if extension env exists
+  // load per-host selector + theme
   useEffect(() => {
     (async () => {
       try {
-        if (typeof chrome !== "undefined" && chrome.tabs && chrome.storage) {
-          const [tab] = await chrome.tabs.query({
-            active: true,
-            currentWindow: true,
-          });
-          if (tab?.url) {
-            const host = new URL(tab.url).host;
-            const key = `selector:${host}`;
-            const data = await chrome.storage.sync.get(key);
-            if (data[key]) setSelector(data[key]);
-          }
+        if (chrome?.tabs && chrome?.storage) {
+          const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+          const host = tab?.url ? new URL(tab.url).host : "";
+          const key = `selector:${host}`;
+          const { [key]: savedSel, theme: savedTheme } = await chrome.storage.sync.get([key, "theme"]);
+          if (savedSel) setSelector(savedSel);
+          if (savedTheme && THEMES.includes(savedTheme)) setTheme(savedTheme);
         }
       } catch {}
     })();
   }, []);
+
+  async function persistTheme(next) {
+    try { await chrome?.storage?.sync?.set?.({ theme: next }); } catch {}
+  }
+
+  function cycleTheme() {
+    const idx = THEMES.indexOf(theme);
+    const next = THEMES[(idx + 1) % THEMES.length];
+    setTheme(next);
+    persistTheme(next);
+  }
+
+  async function testSelector() {
+    try {
+      setMatchCount(null);
+      setError("");
+      if (!chrome?.tabs || !chrome?.scripting) throw new Error("Chrome APIs unavailable.");
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (!tab?.id) throw new Error("No active tab.");
+
+      const [{ result: count }] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (sel) => (sel ? document.querySelectorAll(sel).length : 0),
+        args: [selector],
+      });
+      setMatchCount(Number(count || 0));
+    } catch (e) {
+      setError(e?.message || String(e));
+    }
+  }
 
   async function handleCalculate() {
     setLoading(true);
@@ -69,14 +64,9 @@ export default function App() {
 
     try {
       if (!chrome?.tabs || !chrome?.scripting || !chrome?.storage) {
-        throw new Error(
-          "Chrome extension APIs not available. Try in extension build, not dev server."
-        );
+        throw new Error("Chrome extension APIs not available. Run the built extension, not dev server.");
       }
-      const [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id || !tab?.url) throw new Error("No active tab found.");
 
       const host = new URL(tab.url).host;
@@ -89,8 +79,7 @@ export default function App() {
 
       const [{ result: data }] = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: (sel) =>
-          window.__scrapePrices ? window.__scrapePrices(sel) : null,
+        func: (sel) => (window.__scrapePrices ? window.__scrapePrices(sel) : null),
         args: [selector],
       });
 
@@ -102,55 +91,60 @@ export default function App() {
     }
   }
 
+  const avg =
+    result && result.count > 0
+      ? Number(result.total || 0) / Number(result.count || 1)
+      : 0;
+
+  function copyTotal() {
+    if (!result) return;
+    const text = `${result.currencySymbol}${Number(result.total ?? 0).toFixed(2)} ${result.currencySuffix || ""}`.trim();
+    navigator.clipboard?.writeText(text);
+  }
+
   return (
-    <div className="container">
+    <div className={`container compact ${theme}`}>
       <div className="card">
         <div className="header">
-          <CalcIcon className="icon" />
-          <h2 style={{ marginBottom: 8 }}>Expense Lens</h2>
-          <p style={{ fontSize: 12, color: "#555" }}>
-            Select the price elements and calculate your total spend.
-          </p>
-        </div>
-
-        <div className="infobox">
-          <strong>Heads-up:</strong> This sums all prices matched by your
-          selector on the current page (e.g., an order list). Make sure **all
-          items are rendered** first (scroll to load more or open next page),
-          then press the button again if needed.
+          <img src={calcUrl} alt="" className="brand-icon" width={12} height={12} />
+          <h2 className="h1">Expense Lens</h2>
+          <button className="chip" onClick={cycleTheme} title="Switch theme">Theme</button>
+          <span className="info-badge" tabIndex={0} title="How it works">
+            i
+            <span className="tooltip">
+              Sum prices matched by your CSS selector on this page. Ensure lists are fully loaded
+              (scroll/open next page) before calculating.
+            </span>
+          </span>
         </div>
 
         <div className="row">
-          <div className="label">CSS selector for price elements</div>
+          <label className="label" htmlFor="selector-input">CSS selector for price elements</label>
           <input
-            className="input"
+            id="selector-input"
+            className="input mono"
             value={selector}
             onChange={(e) => setSelector(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleCalculate(); }}
             placeholder=".item-price"
             spellCheck="false"
           />
 
           <div className="actions">
+            <button onClick={testSelector} className="secondary-btn" disabled={loading}>
+              Test selector{matchCount !== null ? ` • ${matchCount}` : ""}
+            </button>
             <button
               onClick={handleCalculate}
               disabled={loading}
-              style={{
-                width: "100%",
-                padding: "10px",
-                borderRadius: 6,
-                background: loading ? "#94a3b8" : "#2563eb", // slate gray if disabled
-                color: "white",
-                fontWeight: 600,
-                cursor: loading ? "not-allowed" : "pointer",
-                border: "none",
-                marginTop: 8,
-              }}
+              className="primary-btn"
+              aria-busy={loading}
             >
               {loading ? "Calculating…" : "Calculate Total"}
             </button>
           </div>
 
-          {error && <div className="error">⚠ {error}</div>}
+          {error && <div className="error" role="alert">⚠ {error}</div>}
 
           {result && (
             <div className="result">
@@ -158,11 +152,12 @@ export default function App() {
                 {result.currencySymbol}
                 {Number(result.total ?? 0).toFixed(2)} {result.currencySuffix}
               </div>
-              <div style={{ color: "var(--text)", opacity: 0.8, marginTop: 4 }}>
-                Found {result.count} prices
-                {result.samples?.length ? (
-                  <> · {result.samples.slice(0, 3).join(" · ")}</>
-                ) : null}
+              <div className="subtle">
+                Found {result.count} prices · Avg {result.currencySymbol}
+                {avg.toFixed(2)} {result.currencySuffix}
+              </div>
+              <div className="result-actions">
+                <button className="chip" onClick={copyTotal} title="Copy total">Copy</button>
               </div>
             </div>
           )}

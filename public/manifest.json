@@ -3,8 +3,31 @@
   "name": "Expense Lens",
   "version": "1.0.0",
   "description": "Quickly sum up your order totals from any shopping site.",
-  "action": { "default_popup": "pages/popup.html" },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Expense Lens",
+    "default_icon": {
+      "16": "icons/16.png",
+      "32": "icons/32.png",
+      "48": "icons/48.png"
+    }
+  },
   "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["<all_urls>"],
-  "background": { "service_worker": "background/service-worker.js" }
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/scraper.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/16.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  }
 }

@@ -10,9 +10,11 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       input: {
-        popup: resolve(__dirname, "src/pages/popup.html"),
+        // make Vite transform and output dist/popup.html
+        popup: resolve(__dirname, "popup.html"),
+        // bundle extension scripts with fixed paths
         background: resolve(__dirname, "src/background/service-worker.js"),
-        scraper: resolve(__dirname, "src/content/scraper.js")
+        scraper: resolve(__dirname, "src/content/scraper.js"),
       },
       output: {
         entryFileNames: (chunk) => {
@@ -21,8 +23,8 @@ export default defineConfig({
           return "assets/[name].js";
         },
         chunkFileNames: "assets/[name].js",
-        assetFileNames: "assets/[name][extname]"
-      }
-    }
-  }
+        assetFileNames: "assets/[name][extname]",
+      },
+    },
+  },
 });

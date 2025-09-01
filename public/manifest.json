@@ -1,35 +1,23 @@
 {
   "manifest_version": 3,
   "name": "Expense Lens",
-  "version": "1.0.0",
-  "description": "Quickly sum up your order totals from any shopping site.",
+  "version": "0.1.0",
+  "description": "Sum prices on any page using a CSS selector. Nothing leaves your browser.",
   "action": {
-    "default_popup": "popup.html",
     "default_title": "Expense Lens",
+    "default_popup": "index.html",
     "default_icon": {
-     "16": "icons/extension-lens-16.png",
-      "24": "icons/extension-lens-24.png",
-      "32": "icons/extension-lens-32.png",
-      "38": "icons/extension-lens-38.png",
-      "48": "icons/extension-lens-48.png"
+      "16":  "icons/extension-lens-16.png",
+      "24":  "icons/extension-lens-24.png",
+      "32":  "icons/extension-lens-32.png",
+      "38":  "icons/extension-lens-38.png",
+      "48":  "icons/extension-lens-48.png"
     }
   },
-  "permissions": ["activeTab", "scripting", "storage"],
-  "host_permissions": ["<all_urls>"],
-  "background": {
-    "service_worker": "background/service-worker.js",
-    "type": "module"
-  },
-  "content_scripts": [
-    {
-      "matches": ["<all_urls>"],
-      "js": ["content/scraper.js"],
-      "run_at": "document_idle"
-    }
-  ],
   "icons": {
     "16":  "icons/extension-lens-16.png",
     "48":  "icons/extension-lens-48.png",
     "128": "icons/extension-lens-128.png"
-  }
+  },
+  "permissions": ["activeTab", "scripting", "storage"]
 }
